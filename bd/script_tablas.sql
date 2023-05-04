@@ -1,46 +1,47 @@
 CREATE USER practica WITH PASSWORD 'abc123.' CREATEDB;
 CREATE DATABASE bdaPractica WITH OWNER=practica;
 
+DROP TABLE Reseña;
+DROP TABLE Cliente;
+DROP TABLE Producto;
 
-CREATE TABLE Cliente (
-    id BIGSERIAL PRIMARY KEY,
-    dni VARCHAR(9) UNIQUE  NOT NULL,
-    nombre VARCHAR(60) NOT NULL,
-    apellidos VARCHAR(60) NOT NULL,
-    contraseña VARCHAR(60) NOT NULL,
-    telefono VARCHAR(60) NOT NULL,
-    idioma VARCHAR(60)
-);
-
-CREATE INDEX ClienteIndexByNombre ON Cliente (nombre);
 
 CREATE TABLE Producto (
-    id BIGSERIAL PRIMARY KEY,
-    nombre VARCHAR(60) unique NOT NULL,
+    id_producto BIGSERIAL CONSTRAINT ProductoPK PRIMARY KEY,
+    nombre VARCHAR(128) NOT NULL,
     descripcion VARCHAR(1024), 
-    ingredientes VARCHAR(60) NOT NULL,
-    fabricante VARCHAR(60) NOT NULL, 
-    cantidadxunidad FLOAT NOT NULL,
-    unidad VARCHAR(60) NOT NULL,
-    infonutricional VARCHAR(1024) NOT null,
-    valoracionMedia FLOAT
+    fabricante VARCHAR(128) NOT NULL, 
+    precio FLOAT NOT NULL,
+    CONSTRAINT PrecioPositivo CHECK (precio > 0),
+    CONSTRAINT NombreFabricanteUnique UNIQUE (nombre,fabricante)
 );
  
-CREATE INDEX ProductoIndexByNombre ON Producto (nombre);
+
+
+CREATE TABLE Cliente (
+    id_cliente BIGSERIAL CONSTRAINT ClientePK PRIMARY KEY,
+    dni VARCHAR(9) NOT NULL,
+    nombre VARCHAR(64) NOT NULL,
+    apellidos VARCHAR(64) NOT NULL,
+    email VARCHAR(128) UNIQUE NOT NULL,
+    contraseña VARCHAR(128) NOT NULL,
+    telefono VARCHAR(16) UNIQUE NOT NULL
+);
+
 
 
 CREATE TABLE Reseña (
-    id BIGSERIAL PRIMARY KEY,
-	id_producto BIGINT references Producto(id) ON DELETE RESTRICT,
-	id_cliente BIGINT references Cliente(id) ON DELETE CASCADE,
-    titulo VARCHAR(60)  NOT NULL,
-    comentario VARCHAR(1024) NOT NULL,
-    fecha SMALLINT NOT NULL,
-    valoracion SMALLINT NOT null,
-    PRIMARY KEY (id, id_producto, id_cliente)
-    
+    id_reseña BIGSERIAL CONSTRAINT ReseñaPK PRIMARY KEY,
+    titulo VARCHAR(64) NOT NULL,
+    comentario VARCHAR(1024),
+    fecha DATE NOT NULL,
+    valoracion SMALLINT NOT NULL,
+    id_producto BIGINT NOT NULL,
+	id_cliente BIGINT NOT NULL,
+    CONSTRAINT ReseñaProductoFK(id_producto) REFERENCES Producto(id_producto) ON DELETE CASCADE,
+    CONSTRAINT ReseñaClienteFK(id_cliente) REFERENCES Cliente(id_cliente) ON DELETE CASCADE,
+    CONSTRAINT ValoracionRange CHECK (valoracion > 0 AND valoracion <= 10)
 );
 
-CREATE INDEX ReseñaIndexByFecha ON Reseña (fecha);
-
-
+CREATE INDEX ReseñaIndexByProducto ON Reseña (id_producto);
+CREATE INDEX ReseñaIndexByCliente ON Reseña (id_cliente);

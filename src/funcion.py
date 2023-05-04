@@ -8,14 +8,15 @@ import psycopg2.errorcodes
 
 #Gets varios
 #   Ver Reseñas de un usuario
-#   Ver Reseña
-#   Ver Productos
+#   Ver Reseñas de un producto
+#   Ver Valoración media de un producto (no se guarda en la BD, se calcula con AVG(valoracion))
+#   Ver reseña
 #   Ver producto
 #   Ver cliente
 #Post
-#   Nuevo Producto
-#   Nuevo Cliente
-#   Nueva Reseña (actualiza la valoracion del producto)
+#   Nuevo producto
+#   Nuevo cliente
+#   Nueva reseña
 #Put
 #   Cambiar Reseña
 #   Cambiar contrasña
