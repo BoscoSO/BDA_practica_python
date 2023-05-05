@@ -62,68 +62,91 @@ def getReseña(conn, id_reseña):
 
 #   SELECT
 ## ------------------------------------------------------------
-def logIn(conn, email, contraseña):
+def logIn(conn):
     """
     Busca la fila con ese email y compara la contraseña de la BD con la dada
     """
+    email = input('Email: ')
+    contraseña = input('Contraseña: ')
 
-def productoPorPrecio(conn, precio_max):
+def productoPorPrecio(conn):
     """
     Busca productos dado un precio máximo
     """
+    precio_max = input('Precio máximo (por ejemplo 20.15): ')
 
-def valoracionMedia(conn, id_producto):
+def valoracionMedia(conn):
     """
     Calcula la valoración media de un producto .
     (no se guarda en la BD, se calcula con AVG(valoracion))
     """
+    id_producto = input('ID del producto: ')
 
-def reseñasProducto(conn, id_producto):
+def reseñasProducto(conn):
     """
     Encuentra las reseñas de un producto.
     """
+    id_producto = input('ID del producto: ')
 
 def reseñasCliente(conn, id_usuario):
     """
     Encuentra las reseñas de un cliente.
+    ERROR: si el cliente no está logeado (id_cliente = -1)
     """
 
 
 
 #   CREATE
 ## ------------------------------------------------------------
-def registrarCliente(conn, dni, nombre, apellidos, teléfono, email, contraseña, contraseña_repetida):
+def registrarCliente(conn):
     """
     Crea un nuevo cliente con esos datos.
     """
+    dni = input('DNI: ')
+    nombre = input('Nombre: ')
+    apellidos = input('Apellidos: ')
+    teléfono = input('Teléfono: ')
+    email = input('Email: ')
+    contraseña = input('Contraseña: ')
+    contraseña_repetida = input('Repetir contraseña: ')
 
-def escribirReseña(conn, id_producto, título, comentario, valoracion):
+def escribirReseña(conn, id_cliente):
     """
     Pide un título, un comentario y una valoración del producto
     """
+    id_producto = input('ID del producto: ')
+    título = input('Título: ')
+    comentario = input('Comentario: ')
+    valoracion = input('Valoración: ')
 
 
 
 #   UPDATE
 ## ------------------------------------------------------------
-def cambiarContraseña(conn, email, contraseña, contraseña_nueva):
+def cambiarContraseña(conn):
     """
     Cambia la contraseña de un cliente.
     """
+    email = input('Email: ')
+    contraseña = input('Contraseña: ')
+    contraseña_nueva = input('Nueva contraseña: ')
 
-def cambiarPrecioProducto(conn, id_producto, precio_nuevo):
+def cambiarPrecioProducto(conn):
     """
     Cambia el precio de un producto existente.
     """
+    id_producto = input('ID del producto: ')
+    precio_nuevo = input('Nuevo precio: ')
 
 
 
 #   DELETE
 ## ------------------------------------------------------------
-def borrarReseña(conn, id_reseña):
+def borrarReseña(conn, id_cliente):
     """
-    Borra una reseña.
+    Borra una reseña que haya escrito el cliente.
     """
+    id_reseña = input('ID de la reseña: ')
 
 
 
@@ -143,31 +166,32 @@ def menu(conn):
 0- Cambiar precio de un producto
 q - Salir   
 """
+    id_cliente = -1
     while True:
         print(MENU_TEXT)
         tecla = input('Opción> ')
         if tecla == 'q':
             break
         elif tecla == '1':
-            registrarCliente(conn, dni, nombre, apellidos, teléfono, email, contraseña, contraseña_repetida)
+            registrarCliente(conn)
         elif tecla == '2':
-            cambiarContraseña(conn, email, contraseña, contraseña_nueva)
+            cambiarContraseña(conn)
         elif tecla == '3':
-            logIn(conn, email, contraseña)
+            id_cliente = logIn(conn)
         elif tecla == '4':
-            productoPorPrecio(conn, precio_max)
+            productoPorPrecio(conn)
         elif tecla == '5':
-            valoracionMedia(conn, id_producto)
+            valoracionMedia(conn)
         elif tecla == '6':
-            reseñasProducto(conn, id_producto)
+            reseñasProducto(conn)
         elif tecla == '7':
-            reseñasCliente(conn, id_usuario)
+            reseñasCliente(conn, id_cliente)
         elif tecla == '8':
-            escribirReseña(conn, id_producto, título, comentario, valoracion)
+            escribirReseña(conn, id_cliente)
         elif tecla == '9':
-            borrarReseña(conn, id_reseña)
+            borrarReseña(conn, id_cliente)
         elif tecla == '0':
-            cambiarPrecioProducto(conn, id_producto, precio_nuevo)
+            cambiarPrecioProducto(conn)
             
             
 ## ------------------------------------------------------------
