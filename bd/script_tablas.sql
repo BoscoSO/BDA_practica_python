@@ -6,6 +6,7 @@ DROP TABLE Cliente;
 DROP TABLE Producto;
 
 
+
 CREATE TABLE Producto (
     id_producto BIGSERIAL CONSTRAINT ProductoPK PRIMARY KEY,
     nombre VARCHAR(128) NOT NULL,
@@ -13,7 +14,7 @@ CREATE TABLE Producto (
     fabricante VARCHAR(128) NOT NULL, 
     precio FLOAT NOT NULL,
     CONSTRAINT PrecioPositivo CHECK (precio > 0),
-    CONSTRAINT NombreFabricanteUnique UNIQUE (nombre,fabricante)
+    CONSTRAINT NombreFabricanteUnique unique(nombre,fabricante)
 );
  
 
@@ -38,8 +39,8 @@ CREATE TABLE Reseña (
     valoracion SMALLINT NOT NULL,
     id_producto BIGINT NOT NULL,
 	id_cliente BIGINT NOT NULL,
-    CONSTRAINT ReseñaProductoFK(id_producto) REFERENCES Producto(id_producto) ON DELETE CASCADE,
-    CONSTRAINT ReseñaClienteFK(id_cliente) REFERENCES Cliente(id_cliente) ON DELETE CASCADE,
+    CONSTRAINT ReseñaProductoFK foreign key(id_producto) REFERENCES Producto(id_producto) ON DELETE CASCADE,
+    CONSTRAINT ReseñaClienteFK foreign key(id_cliente) REFERENCES Cliente(id_cliente) ON DELETE CASCADE,
     CONSTRAINT ValoracionRange CHECK (valoracion > 0 AND valoracion <= 10)
 );
 
