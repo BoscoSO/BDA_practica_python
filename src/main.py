@@ -14,8 +14,8 @@ def connect_db():
         conn = psycopg2.connect(
             host="localhost",
             database="pythonBDA",
-            user="BDA",
-            password="BDA2223"
+            user="postgres",
+            password="abc123."
         )
         conn.autocommit = False
         return conn
@@ -416,7 +416,7 @@ def cambiarProducto(conn, id_cliente):
     fabricante = input('Fabricante: ')
     precio = input('Precio: ')
 
-    sql = "SELECT id_cliente FROM Producto WHERE id = %(p)s"
+    sql = "SELECT id_cliente FROM Producto WHERE id_producto = %(p)s"
     
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
@@ -427,9 +427,9 @@ def cambiarProducto(conn, id_cliente):
                                nombre = %(n)s, 
                                descripcion = %(d)s, 
                                fabricante = %(f)s, 
-                               precio = %(p)s
+                               precio = %(p)s,
                                fecha_modificacion = %(fm)s 
-                               WHERE id = %(id)s""", {'n': nombre, 'd': descripcion, 'f': fabricante, 'p': precio, 'fm':datetime.now(), 'id': id_producto})
+                               WHERE id_producto = %(id)s""", {'n': nombre, 'd': descripcion, 'f': fabricante, 'p': precio, 'fm':datetime.now(), 'id': id_producto})
                 
                 cursor.execute("""DELETE FROM Reseña WHERE id_producto = %(id)s""", {'id': id_producto})
                 conn.commit()
