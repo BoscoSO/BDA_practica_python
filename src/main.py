@@ -390,6 +390,8 @@ def cambiarContraseña(conn, id_cliente):
             else:
                 print("Solo puedes cambiar la contraseña de esta propia cuenta.")
 
+        except TypeError:
+                print("No existe ningun usuario con ese email.")
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
                 print("No existe la tabla Cliente.")
@@ -436,7 +438,8 @@ def cambiarProducto(conn, id_cliente):
                 print("Producto cambiado con éxito.")
             else:
                 print("Ese producto no te pertenece, no puedes modificarlo.")
-        
+        except TypeError:
+                print("No existe el producto.")
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
                 print("No existe la tabla Producto.")
@@ -480,7 +483,8 @@ def cambiarPrecioProducto(conn, id_cliente):
                 print("Precio cambiado con éxito.")
             else:
                 print("Ese producto no te pertenece, no puedes cambiar su precio.")
-
+        except TypeError:
+                print("No existe el producto.")
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
                 print("No existe la tabla Producto.")
@@ -519,7 +523,8 @@ def borrarReseña(conn, id_cliente):
                 print("Reseña borrada con éxito.")
             else:
                 print("Esa reseña no te pertenece, no puedes borrarla.")
-
+        except TypeError:
+                print("No existe la Reseña.")
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
                 print("No existe la tabla Reseña.")
