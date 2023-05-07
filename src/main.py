@@ -298,14 +298,14 @@ def subirProducto(conn, id_cliente):
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
                 print("No existe la tabla Producto.")
-            if e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
+            elif e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
                 if 'nombre' in e.pgerror:
                     print("El nombre del producto es necesario")
                 if 'precio' in e.pgerror:
                     print("El precio del producto es necesario")
-            if e.pgcode== psycopg2.errorcodes.CHECK_VIOLATION:
+            elif e.pgcode== psycopg2.errorcodes.CHECK_VIOLATION:
                 print("El precio debe ser mayor a 0")
-            if e.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
+            elif e.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
                 print("No existe el cliente.")
             else:
                 print(f"Error {e.pgcode}: {e.pgerror}")
@@ -414,9 +414,11 @@ def cambiarProducto(conn, id_cliente):
 
     id_producto = input('ID del producto: ')
     nombre = input('Nombre: ')
+    if nombre=="": nombre=None
     descripcion = input('Descripcion: ')
     fabricante = input('Fabricante: ')
     precio = input('Precio: ')
+    if precio=="": precio=None
 
     sql = "SELECT id_cliente FROM Producto WHERE id_producto = %(p)s"
     
@@ -443,12 +445,12 @@ def cambiarProducto(conn, id_cliente):
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
                 print("No existe la tabla Producto.")
-            if e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
+            elif e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
                 if 'nombre' in e.pgerror:
                     print("El nombre del producto es necesario")
                 if 'precio' in e.pgerror:
                     print("El precio del producto es necesario")
-            if e.pgcode== psycopg2.errorcodes.CHECK_VIOLATION:
+            elif e.pgcode== psycopg2.errorcodes.CHECK_VIOLATION:
                 print("El precio debe ser mayor a 0")
             elif e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
                 print("No se puede modificar el producto porque alguien más lo cambió.")
