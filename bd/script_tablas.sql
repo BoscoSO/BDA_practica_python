@@ -20,6 +20,7 @@ CREATE TABLE Cliente (
 
 
 
+
 CREATE TABLE Producto (
     id_producto BIGSERIAL CONSTRAINT ProductoPK PRIMARY KEY,
     nombre VARCHAR(128) NOT NULL,
@@ -28,8 +29,8 @@ CREATE TABLE Producto (
     precio FLOAT NOT NULL,
     fecha_modificacion DATE,
     id_cliente BIGINT NOT NULL,
-    CONSTRAINT ProductoCliente FOREIGN KEY (id_cliente) REFERENCES Cliente (id_cliente) ON DELETE CASCADE,
-    CONSTRAINT PrecioPositivo CHECK (precio > 0),
+    CONSTRAINT ProductoCliente FOREIGN KEY (id_cliente)REFERENCES Cliente (id_cliente) ON DELETE CASCADE,
+    CONSTRAINT PrecioPositivo CHECK (precio > 0)
 );
  
 

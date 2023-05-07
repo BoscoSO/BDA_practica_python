@@ -467,7 +467,7 @@ def cambiarPrecioProducto(conn, id_cliente):
     id_producto = input('ID del producto: ')
     descuento = input('Indica la cantidad del descuento (por ejemplo para indicar que es del 20%: 20): ')
 
-    sql = "SELECT id_cliente, precio FROM Producto WHERE id = %(p)s"
+    sql = "SELECT id_cliente, precio FROM Producto WHERE id_producto = %(p)s"
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
@@ -475,7 +475,7 @@ def cambiarPrecioProducto(conn, id_cliente):
             row = cursor.fetchone()
             if id_cliente == row['id_cliente']:
                 precio_nuevo = row['precio'] * (1-float(descuento)/100)
-                cursor.execute("UPDATE Producto SET precio = %(n)s WHERE id = %(p)s", {'n': precio_nuevo, 'p': id_producto})
+                cursor.execute("UPDATE Producto SET precio = %(n)s WHERE id_producto = %(p)s", {'n': precio_nuevo, 'p': id_producto})
                 conn.commit()
                 print("Precio cambiado con éxito.")
             else:
