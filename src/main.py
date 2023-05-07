@@ -511,10 +511,10 @@ def borrarReseña(conn, id_cliente):
     
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
-            cursor.execute("SELECT id_cliente FROM Reseña WHERE id = %(id)s", {'id': id_reseña})
+            cursor.execute("SELECT id_cliente FROM Reseña WHERE id_reseña = %(id)s", {'id': id_reseña})
             row = cursor.fetchone()
             if id_cliente == row['id_cliente']:
-                cursor.execute("DELETE FROM Reseña WHERE id = %(id)s", {'id': id_reseña})
+                cursor.execute("DELETE FROM Reseña WHERE id_reseña = %(id)s", {'id': id_reseña})
                 conn.commit()
                 print("Reseña borrada con éxito.")
             else:
