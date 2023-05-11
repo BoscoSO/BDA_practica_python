@@ -34,14 +34,17 @@ def disconnect_db(conn):
 
 #   SELECT por id
 ## ------------------------------------------------------------
-def getProducto(conn, id_producto):
+def getProducto(conn):
     """
     Busca un producto por su id.
     :param conn: conexión abierta a la bd
-    :param id_reseña: id del producto
     :return: Nada
     """
+
+    id_producto = input('Id del producto: ')
+    
     sql = "SELECT * FROM Reseña WHERE id_producto = %(p)s"
+
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
             cursor.execute(sql, {'p':id_producto})
@@ -49,42 +52,6 @@ def getProducto(conn, id_producto):
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
                 print("No existe la tabla Producto.")
-            else:
-                print(f"Erro {e.pgcode}: {e.pgerror}")
-
-def getCliente(conn, id_cliente):
-    """
-    Busca un cliente por su id.
-    :param conn: conexión abierta a la bd
-    :param id_reseña: id del cliente
-    :return: Nada
-    """
-    sql = "SELECT * FROM Cliente WHERE id_cliente = %(c)s"
-    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-        try:
-            cursor.execute(sql, {'c':id_cliente})
-            return cursor.fetchone()
-        except psycopg2.Error as e:
-            if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
-                print("No existe la tabla Cliente.")
-            else:
-                print(f"Erro {e.pgcode}: {e.pgerror}")
-
-def getReseña(conn, id_reseña):
-    """
-    Busca una reseña por su id.
-    :param conn: conexión abierta a la bd
-    :param id_reseña: id de la reseña
-    :return: Nada
-    """
-    sql = "SELECT * FROM Reseña WHERE id_reseña = %(r)s"
-    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-        try:
-            cursor.execute(sql, {'r':id_reseña})
-            return cursor.fetchone()
-        except psycopg2.Error as e:
-            if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
-                print("No existe la tabla Reseña.")
             else:
                 print(f"Erro {e.pgcode}: {e.pgerror}")
 
@@ -98,6 +65,7 @@ def logIn(conn):
     :param conn: conexión abierta a la bd
     :return: Nada
     """
+
     email = input('Email: ')
     contraseña = input('Contraseña: ')
 
@@ -128,6 +96,7 @@ def productoPorPrecio(conn):
     :param conn: conexión abierta a la bd
     :return: Nada
     """
+
     precio_max = input('Precio máximo (por ejemplo 20.15): ')
    
     sql = "SELECT * FROM Producto WHERE precio < %(p)s ORDER BY precio DESC"
@@ -152,7 +121,9 @@ def valoracionMedia(conn):
     :param conn: conexión abierta a la bd
     :return: Nada
     """
+    
     id_producto = input('ID del producto: ')
+    
     sql = "SELECT AVG(valoracion), COUNT(valoracion) FROM Reseña WHERE id_producto = %(p)s"
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
@@ -178,6 +149,7 @@ def reseñasProducto(conn):
     """
 
     id_producto = input('ID del producto: ')
+    
     sql = "SELECT * FROM reseña WHERE id_producto = %(p)s"
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
@@ -251,6 +223,7 @@ def registrarCliente(conn):
 
 
     sql = "INSERT INTO Cliente (dni, nombre, apellidos ,email ,contraseña ,telefono, fecha_alta) VALUES (%(d)s,%(n)s,%(a)s,%(e)s,%(c)s,%(t)s,%(f)s)"
+    
     with conn.cursor() as cursor:
         try:
             cursor.execute(sql, {'d': dni, 'n': nombre, 'a': apellidos, 'e': email, 'c': contraseña, 't': telefono, 'f': datetime.now()})
@@ -322,18 +295,15 @@ def escribirReseña(conn, id_cliente):
 
     id_producto = input('ID del producto: ')
     id_p = None if id_producto=="" else int(id_producto)
-
     titulo = input('Título: ')
     if titulo=="": titulo=None
-
     comentario = input('Comentario: ')
     if comentario=="": comentario=None
-
     valoracion = input('Valoración: ')
     val = None if valoracion=="" else int(valoracion)
 
-
     sql = "INSERT INTO Reseña (titulo,comentario,fecha,valoracion,id_producto,id_cliente) VALUES (%(t)s,%(c)s,%(f)s,%(v)s,%(p)s, %(u)s)"
+    
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
             cursor.execute(sql, {'t': titulo, 'c': comentario, 'f': datetime.now(), 'v': val, 'p': id_p, 'u': id_cliente})
@@ -368,7 +338,7 @@ def cambiarContraseña(conn, id_cliente):
     :return: Nada
     """
 
-    conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
+    conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_UNCOMMITTED)
 
     email = input('Email: ')
     contraseña = input('Contraseña: ')
@@ -396,7 +366,7 @@ def cambiarContraseña(conn, id_cliente):
             if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
                 print("No existe la tabla Cliente.")
             elif e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
-                print("No se puede modificar la contraseña porque alguien más la cambió. Preocúpate.")
+                print("No se puede modificar la contraseña en estos momentos.")
             else:
                 print(f"Erro {e.pgcode}: {e.pgerror}")
             conn.rollback()
@@ -410,7 +380,7 @@ def cambiarProducto(conn, id_cliente):
     :return: Nada
     """
 
-    conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
+    conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_UNCOMMITTED)
 
     id_producto = input('ID del producto: ')
     nombre = input('Nombre: ')
@@ -453,7 +423,7 @@ def cambiarProducto(conn, id_cliente):
             elif e.pgcode== psycopg2.errorcodes.CHECK_VIOLATION:
                 print("El precio debe ser mayor a 0")
             elif e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
-                print("No se puede modificar el producto porque alguien más lo cambió.")
+                print("No se puede modificar el producto en estos momentos porque está siendo modificado.")
             else:
                 print(f"Error {e.pgcode}: {e.pgerror}")
             conn.rollback()
@@ -467,7 +437,7 @@ def cambiarPrecioProducto(conn, id_cliente):
     :return: Nada
     """
 
-    conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
+    conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_UNCOMMITTED);
 
     id_producto = input('ID del producto: ')
     descuento = input('Indica la cantidad del descuento (por ejemplo para indicar que es del 20%: 20): ')
@@ -491,7 +461,7 @@ def cambiarPrecioProducto(conn, id_cliente):
             if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
                 print("No existe la tabla Producto.")
             elif e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
-                print("No se puede cambiar el precio del producto porque alguien lo estaba cambiando.")
+                print("No se puede cambiar el precio del producto en estos momentos porque está siendo modificado.")
             else:
                 print(f"Erro {e.pgcode}: {e.pgerror}")
             conn.rollback()
@@ -525,13 +495,11 @@ def borrarReseña(conn, id_cliente):
                 print("Reseña borrada con éxito.")
             else:
                 print("Esa reseña no te pertenece, no puedes borrarla.")
-        except TypeError:
-                print("No existe la Reseña.")
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
                 print("No existe la tabla Reseña.")
             elif e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
-                print("No se puede borrar la reseña porque ya no existe.")
+                print("No se puede borrar la reseña porque ya ha sido borrada.")
             else:
                 print(f"Erro {e.pgcode}: {e.pgerror}")
             conn.rollback()
@@ -553,13 +521,15 @@ def fullMenu(conn, id_cliente):
 5- Reseñas de un cliente                6- Escribir reseña              
 7- Borrar reseña                        8- Subir producto
 9- Modificar un producto                0- Cambiar precio de un producto
-q- Cerrar sesion
+i- Buscar producto por ID               q- Cerrar sesion
 """
     while True:
         print(MENU_TEXT)
         tecla = input('Opción> ')
         if tecla == 'q':
             break
+        elif tecla == 'i':
+            getProducto(conn)
         elif tecla == '1':
             cambiarContraseña(conn, id_cliente)
         elif tecla == '2':
@@ -592,7 +562,7 @@ def simpleMenu(conn):
       -- MENÚ --
 1- Registrarse                  2- Log in (para mas opciones)
 3- Buscar productos por precio  4- Valoración media de un producto  
-5- Reseñas de un producto
+5- Reseñas de un producto       i- Buscar producto por ID
 q - Salir   
 """
 
@@ -601,6 +571,8 @@ q - Salir
         tecla = input('Opción> ')
         if tecla == 'q':
             break
+        elif tecla == 'i':
+            getProducto(conn)
         elif tecla == '1':
             registrarCliente(conn)
         elif tecla == '2':

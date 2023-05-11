@@ -2,8 +2,8 @@ CREATE USER BDA WITH PASSWORD 'BDA2223' CREATEDB;
 CREATE DATABASE pythonBDA WITH OWNER = BDA;
 
 DROP TABLE Reseña;
-DROP TABLE Cliente;
 DROP TABLE Producto;
+DROP TABLE Cliente;
 
 
 
@@ -29,7 +29,7 @@ CREATE TABLE Producto (
     precio FLOAT NOT NULL,
     fecha_modificacion DATE,
     id_cliente BIGINT NOT NULL,
-    CONSTRAINT ProductoCliente FOREIGN KEY (id_cliente)REFERENCES Cliente (id_cliente) ON DELETE CASCADE,
+    CONSTRAINT ProductoCliente FOREIGN KEY (id_cliente) REFERENCES Cliente (id_cliente) ON DELETE CASCADE,
     CONSTRAINT PrecioPositivo CHECK (precio > 0)
 );
  
