@@ -13,9 +13,9 @@ def connect_db():
     try:
         conn = psycopg2.connect(
             host="localhost",
-            database="pythonBDA",
-            user="postgres",
-            password="abc123."
+            database="pythonbda",
+            user="bda",
+            password="BDA2223"
         )
         conn.autocommit = False
         return conn
@@ -29,9 +29,6 @@ def disconnect_db(conn):
     conn.close()
 
 
-
-
-
 #   SELECT por id
 ## ------------------------------------------------------------
 def getProducto(conn):
@@ -42,20 +39,25 @@ def getProducto(conn):
     """
 
     id_producto = input('Id del producto: ')
-    
-    sql = "SELECT * FROM Reseña WHERE id_producto = %(p)s"
+    if not id_producto.isdigit():
+        print("No es un id valido")
+        return
+
+    sql = "SELECT * FROM Producto WHERE id_producto = %(p)s"
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
             cursor.execute(sql, {'p':id_producto})
-            return cursor.fetchone()
+            row=cursor.fetchone()
+            if row == None :
+                print("No existe el producto.")
+            else:
+                return row
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
                 print("No existe la tabla Producto.")
             else:
                 print(f"Erro {e.pgcode}: {e.pgerror}")
-
-
 
 #   SELECT
 ## ------------------------------------------------------------
@@ -69,7 +71,7 @@ def logIn(conn):
     email = input('Email: ')
     contraseña = input('Contraseña: ')
 
-    sql = "SELECT id_cliente, contraseña FROM cliente WHERE email = %(e)s"
+    sql = "SELECT id_cliente, contrasena FROM cliente WHERE email = %(e)s"
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
@@ -78,7 +80,7 @@ def logIn(conn):
             if row is None:
                 print("Usuario no encontrado")
             else:
-                if contraseña == row['contraseña']:
+                if contraseña == row['contrasena']:
                     print("Logeado correctamente")
                     fullMenu(conn, row['id_cliente'])
                 else:
@@ -98,7 +100,10 @@ def productoPorPrecio(conn):
     """
 
     precio_max = input('Precio máximo (por ejemplo 20.15): ')
-   
+    if not precio_max.replace(".","").isdigit():
+        print("No es un numero")
+        return
+
     sql = "SELECT * FROM Producto WHERE precio < %(p)s ORDER BY precio DESC"
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
@@ -121,10 +126,12 @@ def valoracionMedia(conn):
     :param conn: conexión abierta a la bd
     :return: Nada
     """
-    
-    id_producto = input('ID del producto: ')
-    
-    sql = "SELECT AVG(valoracion), COUNT(valoracion) FROM Reseña WHERE id_producto = %(p)s"
+    rowP=getProducto(conn)
+    if rowP is None: 
+        return
+    id_producto=rowP['id_producto']
+
+    sql = "SELECT AVG(valoracion), COUNT(valoracion) FROM Resena WHERE id_producto = %(p)s"
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
@@ -133,7 +140,12 @@ def valoracionMedia(conn):
             if row is None:
                 print("Producto no encontrado")
             else:
-                print(f"Valoración media ({row['count']} valoraciones): {row['avg']}")
+                if row['count'] == 0:
+                    print("No hay reseñas para este producto")
+                else:
+                    print(f"Valoración media ({row['count']} valoraciones): {row['avg']}")
+        except TypeError:
+            print("No existe el producto.")
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
                 print("No existe la tabla Reseña.")
@@ -148,14 +160,20 @@ def reseñasProducto(conn):
     :return: Nada
     """
 
-    id_producto = input('ID del producto: ')
-    
-    sql = "SELECT * FROM reseña WHERE id_producto = %(p)s"
+    rowP=getProducto(conn)
+    if rowP is None: 
+        return
+    id_producto=rowP['id_producto']
+
+    sql = "SELECT * FROM resena WHERE id_producto = %(p)s"
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
             cursor.execute(sql, {'p': id_producto})
             rows = cursor.fetchall()
+            if len(rows) == 0:
+                print("Este producto no tiene reseñas")
+                return
             print("Estas son las reseñas del producto: ")
             for row in rows:
                 print(row)
@@ -174,7 +192,7 @@ def reseñasCliente(conn, id_cliente):
     :return: Nada
     """
 
-    sql = "SELECT * FROM reseña WHERE id_cliente = %(r)s"
+    sql = "SELECT * FROM resena WHERE id_cliente = %(r)s"
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
@@ -222,7 +240,7 @@ def registrarCliente(conn):
         return -1
 
 
-    sql = "INSERT INTO Cliente (dni, nombre, apellidos ,email ,contraseña ,telefono, fecha_alta) VALUES (%(d)s,%(n)s,%(a)s,%(e)s,%(c)s,%(t)s,%(f)s)"
+    sql = "INSERT INTO Cliente (dni, nombre, apellidos ,email ,contrasena ,telefono, fecha_alta) VALUES (%(d)s,%(n)s,%(a)s,%(e)s,%(c)s,%(t)s,%(f)s)"
     
     with conn.cursor() as cursor:
         try:
@@ -260,6 +278,10 @@ def subirProducto(conn, id_cliente):
     if fabricante=="": fabricante=None
     precio = input('Precio: ')
     if precio=="": precio=None
+    
+    if not precio.replace(".","").isdigit():
+        print("No es un valor correcto para el precio")
+        return
 
     sql = "INSERT INTO Producto (nombre,descripcion,fabricante,precio,fecha_modificacion,id_cliente) VALUES (%(n)s,%(d)s,%(f)s,%(p)s,%(fm)s,%(c)s)"
 
@@ -293,16 +315,22 @@ def escribirReseña(conn, id_cliente):
     :return: Nada
     """
 
-    id_producto = input('ID del producto: ')
+    rowP=getProducto(conn)
+    if rowP is None: 
+        return
+    id_producto=rowP['id_producto']
     id_p = None if id_producto=="" else int(id_producto)
     titulo = input('Título: ')
     if titulo=="": titulo=None
     comentario = input('Comentario: ')
     if comentario=="": comentario=None
     valoracion = input('Valoración: ')
+    if not valoracion.isdigit(): 
+        print("la valoración debe ser un entero entre 1 y 10")
+        return
     val = None if valoracion=="" else int(valoracion)
 
-    sql = "INSERT INTO Reseña (titulo,comentario,fecha,valoracion,id_producto,id_cliente) VALUES (%(t)s,%(c)s,%(f)s,%(v)s,%(p)s, %(u)s)"
+    sql = "INSERT INTO Resena (titulo,comentario,fecha,valoracion,id_producto,id_cliente) VALUES (%(t)s,%(c)s,%(f)s,%(v)s,%(p)s, %(u)s)"
     
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
@@ -344,15 +372,15 @@ def cambiarContraseña(conn, id_cliente):
     contraseña = input('Contraseña: ')
     contraseña_nueva = input('Nueva contraseña: ')
 
-    sql = "SELECT id_cliente, contraseña FROM Cliente WHERE email = %(e)s"
+    sql = "SELECT id_cliente, contrasena FROM Cliente WHERE email = %(e)s"
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
             cursor.execute(sql, {'e': email})
             row = cursor.fetchone()
             if id_cliente == row['id_cliente']:
-                if contraseña == row['contraseña']:
-                    cursor.execute("UPDATE Cliente SET contraseña = %(n)s WHERE email = %(e)s", {'n': contraseña_nueva, 'e': email})
+                if contraseña == row['contrasena']:
+                    cursor.execute("UPDATE Cliente SET contrasena = %(n)s WHERE email = %(e)s", {'n': contraseña_nueva, 'e': email})
                     conn.commit()
                     print("Contraseña cambiada con éxito.")
                 else:
@@ -389,6 +417,9 @@ def cambiarProducto(conn, id_cliente):
     fabricante = input('Fabricante: ')
     precio = input('Precio: ')
     if precio=="": precio=None
+    if not precio.replace(".","").isdigit():
+        print("No es un valor correcto para el precio")
+        return
 
     sql = "SELECT id_cliente FROM Producto WHERE id_producto = %(p)s"
     
@@ -405,7 +436,7 @@ def cambiarProducto(conn, id_cliente):
                                fecha_modificacion = %(fm)s 
                                WHERE id_producto = %(id)s""", {'n': nombre, 'd': descripcion, 'f': fabricante, 'p': precio, 'fm':datetime.now(), 'id': id_producto})
                 
-                cursor.execute("""DELETE FROM Reseña WHERE id_producto = %(id)s""", {'id': id_producto})
+                cursor.execute("""DELETE FROM Resena WHERE id_producto = %(id)s""", {'id': id_producto})
                 conn.commit()
                 print("Producto cambiado con éxito.")
             else:
@@ -439,7 +470,11 @@ def cambiarPrecioProducto(conn, id_cliente):
 
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_UNCOMMITTED);
 
-    id_producto = input('ID del producto: ')
+    rowP=getProducto(conn)
+    if rowP is None: 
+        return
+    id_producto=rowP['id_producto']
+    
     descuento = input('Indica la cantidad del descuento (por ejemplo para indicar que es del 20%: 20): ')
 
     sql = "SELECT id_cliente, precio FROM Producto WHERE id_producto = %(p)s"
@@ -452,7 +487,7 @@ def cambiarPrecioProducto(conn, id_cliente):
                 precio_nuevo = row['precio'] * (1-float(descuento)/100)
                 cursor.execute("UPDATE Producto SET precio = %(n)s WHERE id_producto = %(p)s", {'n': precio_nuevo, 'p': id_producto})
                 conn.commit()
-                print("Precio cambiado con éxito.")
+                print(f"Precio cambiado con éxito a [{precio_nuevo}]")
             else:
                 print("Ese producto no te pertenece, no puedes cambiar su precio.")
         except TypeError:
@@ -483,18 +518,20 @@ def borrarReseña(conn, id_cliente):
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
 
     reseñasCliente(conn, id_cliente)
-    id_reseña = input('Escribe el ID de la reseña que quieras borrar: ')
+    id_resena = input('Escribe el ID de la reseña que quieras borrar: ')
     
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
-            cursor.execute("SELECT id_cliente FROM Reseña WHERE id_reseña = %(id)s", {'id': id_reseña})
+            cursor.execute("SELECT id_cliente FROM Resena WHERE id_resena = %(id)s", {'id': id_resena})
             row = cursor.fetchone()
             if id_cliente == row['id_cliente']:
-                cursor.execute("DELETE FROM Reseña WHERE id_reseña = %(id)s", {'id': id_reseña})
+                cursor.execute("DELETE FROM Resena WHERE id_resena = %(id)s", {'id': id_resena})
                 conn.commit()
                 print("Reseña borrada con éxito.")
             else:
                 print("Esa reseña no te pertenece, no puedes borrarla.")
+        except TypeError:
+                print("No existe esa reseña.")
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
                 print("No existe la tabla Reseña.")
@@ -563,7 +600,7 @@ def simpleMenu(conn):
 1- Registrarse                  2- Log in (para mas opciones)
 3- Buscar productos por precio  4- Valoración media de un producto  
 5- Reseñas de un producto       i- Buscar producto por ID
-q - Salir   
+q- Salir   
 """
 
     while True:

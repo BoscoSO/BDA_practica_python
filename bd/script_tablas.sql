@@ -1,7 +1,12 @@
-CREATE USER BDA WITH PASSWORD 'BDA2223' CREATEDB;
-CREATE DATABASE pythonBDA WITH OWNER = BDA;
+CREATE USER bda WITH PASSWORD 'BDA2223';
+ALTER USER bda CREATEDB;
 
-DROP TABLE Reseña;
+CREATE DATABASE pythonbda OWNER = bda;
+
+\c pythonbda bda;
+
+
+DROP TABLE Resena;
 DROP TABLE Producto;
 DROP TABLE Cliente;
 
@@ -13,7 +18,7 @@ CREATE TABLE Cliente (
     nombre VARCHAR(64),
     apellidos VARCHAR(64),
     email VARCHAR(128) UNIQUE NOT NULL,
-    contraseña VARCHAR(128) NOT NULL,
+    contrasena VARCHAR(128) NOT NULL,
     telefono VARCHAR(16) UNIQUE,
     fecha_alta DATE
 );
@@ -35,18 +40,18 @@ CREATE TABLE Producto (
  
 
 
-CREATE TABLE Reseña (
-    id_reseña BIGSERIAL CONSTRAINT ReseñaPK PRIMARY KEY,
+CREATE TABLE Resena (
+    id_resena BIGSERIAL CONSTRAINT ResenaPK PRIMARY KEY,
     titulo VARCHAR(64),
     comentario VARCHAR(1024),
     valoracion SMALLINT NOT NULL,
     fecha DATE,
     id_producto BIGINT NOT NULL,
 	id_cliente BIGINT NOT NULL,
-    CONSTRAINT ReseñaProductoFK FOREIGN KEY (id_producto) REFERENCES Producto (id_producto) ON DELETE CASCADE,
-    CONSTRAINT ReseñaClienteFK FOREIGN KEY (id_cliente) REFERENCES Cliente (id_cliente) ON DELETE CASCADE,
+    CONSTRAINT ResenaProductoFK FOREIGN KEY (id_producto) REFERENCES Producto (id_producto) ON DELETE CASCADE,
+    CONSTRAINT ResenaClienteFK FOREIGN KEY (id_cliente) REFERENCES Cliente (id_cliente) ON DELETE CASCADE,
     CONSTRAINT ValoracionRange CHECK (valoracion > 0 AND valoracion <= 10)
 );
 
-CREATE INDEX ReseñaIndexByProducto ON Reseña (id_producto);
-CREATE INDEX ReseñaIndexByCliente ON Reseña (id_cliente);
+CREATE INDEX ResenaIndexByProducto ON Resena (id_producto);
+CREATE INDEX ResenaIndexByCliente ON Resena (id_cliente);
