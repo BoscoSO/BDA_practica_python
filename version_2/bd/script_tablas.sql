@@ -9,7 +9,6 @@ DROP TABLE Usuario;
 DROP TABLE Pelicula;
 DROP TABLE Categoria;
 DROP TABLE Alquiler;
-DROP TABLE Descuento;
 
 
 
@@ -32,9 +31,7 @@ CREATE TABLE Pelicula (
     duracion        INT             NOT NULL, 
     precio          FLOAT           NOT NULL,
     id_categoria    BIGINT,
-    id_descuento    BIGINT,
     CONSTRAINT PeliculaCategoriaFK  FOREIGN KEY (id_categoria) REFERENCES Categoria (id) ON DELETE SET NULL,
-    CONSTRAINT PeliculaDescuentoFK  FOREIGN KEY (id_descuento) REFERENCES Descuento (id) ON DELETE SET NULL,
     CONSTRAINT DuracionPelicula     CHECK (duracion >= 0),
     CONSTRAINT PrecioPelicula       CHECK (precio >= 0)
 );
@@ -53,7 +50,7 @@ CREATE TABLE Alquiler (
     id_pelicula     BIGINT,
     fecha_venta     DATE         NOT NULL,
     fecha_limite    DATE         NOT NULL,
-    importe         FLOAT,
+    importe         FLOAT        NOT NULL,
     compartida      BOOLEAN      NOT NULL,
     CONSTRAINT AlquilerUsuarioFK    FOREIGN KEY (id_usuario) REFERENCES Usuario (id) ON DELETE SET NULL,
     CONSTRAINT AlquilerPeliculaFK   FOREIGN KEY (id_pelicula)   REFERENCES Pelicula (id) ON DELETE SET NULL,
@@ -61,15 +58,6 @@ CREATE TABLE Alquiler (
     CONSTRAINT FechaLimiteAlquiler  CHECK (fecha_limite > fecha_venta)
 );
 CREATE INDEX AlquilerUsuario ON Alquiler (id_usuario);
-
-CREATE TABLE Descuento (
-    id              BIGSERIAL       CONSTRAINT DescuentoPK PRIMARY KEY,
-    descripcion     VARCHAR(1024),
-    descuento       INT             NOT NULL,
-    precio_original FLOAT           NOT NULL,
-    CONSTRAINT DescuentoPositivo CHECK (descuento > 0),
-    CONSTRAINT PrecioOriginal CHECK (precio_original > 0)
-);
 
 
 
