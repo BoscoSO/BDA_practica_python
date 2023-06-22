@@ -96,7 +96,7 @@ def logIn(conn):
     email = input('Email: ')
     contraseña = input('Contraseña: ')
 
-    sql = "SELECT id_cliente, contrasena FROM cliente WHERE email = %(e)s"
+    sql = "SELECT id, contrasena FROM Usuario WHERE email = %(e)s"
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
@@ -107,12 +107,12 @@ def logIn(conn):
             else:
                 if contraseña == row['contrasena']:
                     print("Logeado correctamente")
-                    ##fullMenu(conn, row['id_cliente'])
+                    userMenu(conn, row['id'])
                 else:
                     print("Contraseña incorrecta")
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
-                print("No existe la tabla Cliente.")
+                print("No existe la tabla Usuario.")
             else:
                 print(f"Erro {e.pgcode}: {e.pgerror}")
 
