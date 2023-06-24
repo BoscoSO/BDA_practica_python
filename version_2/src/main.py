@@ -200,23 +200,38 @@ def buscarPorTitulo(conn):
 
 def buscarPorCategoria(conn):
     """
-    1. Pide el nombre de la categoría
-    2. Busca el id de la categoría con ese nombre
-    3. Recupera todas las pelis con esa categoría y muestra su título, duración y precio
+    1. Imprime los nombres de todas las categorías
+    2. Pide el nombre de la categoría
+    3. Busca el id de la categoría con ese nombre
+    4. Recupera todas las pelis con ese id_categoria y muestra su título, duración y precio
     """
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED)
 
-    nombre = input("Inserta el nombre de la categoría a buscar: ")
-    sql = "SELECT titulo, duracion, precio FROM Pelicula p JOIN Categoria c ON p.id_categoria=c.id WHERE c.nombre = %(n)s"
+    sql1 = "SELECT nombre FROM categoria"
+    sql2 = "SELECT titulo, duracion, precio FROM Pelicula p JOIN Categoria c ON p.id_categoria = c.id WHERE c.nombre = %(n)s"
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
-            cursor.execute(sql, {'n': nombre})
-            rows = cursor.fetchall()
+            cursor.execute(sql1)
+            categorias = cursor.fetchall()
+            if cursor.rowcount == 0:
+                print("No hay categorías en este momento :(")
+            else:
+                print(f"{cursor.rowcount} categorías disponibles:")
+                for categoria in categorias:
+                    print(f"{categoria['nombre']}")
+            
+            nombre=input("Inserta el nombre de la categoría a buscar: ")
 
-            for row in rows:
-                print(f"[Titulo: {row['titulo']}, Duracion: {row['duracion']}, Precio: {row['precio']}]")
-            print(f"Encontradas {cursor.rowcount} peliculas")
+            cursor.execute(sql2, {'n': nombre})
+            peliculas = cursor.fetchall()
+            if cursor.rowcount == 0:
+                print("No hay películas dentro de esta categoría :(")
+            else:
+                print(f"{cursor.rowcount} películas disponibles:")
+                for pelicula in peliculas:
+                    print(f"{pelicula['titulo']}, {pelicula['duracion']}, {pelicula['precio']}")
+            
             conn.commit()
 
         except psycopg2.Error as e:
