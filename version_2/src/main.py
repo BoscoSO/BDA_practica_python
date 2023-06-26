@@ -37,6 +37,11 @@ def registrarUsuario(conn):
     Crea un nuevo usuario con los datos proporcionados.
     :param conn: conexión abierta a la bd
     :return: Nada
+
+    NIVEL DE AISLAMIENTO:
+    READ_COMMITTED -
+    REPEATABLE_READ -
+    SERIALIZABLE -
     """
     #conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED)
     
@@ -57,11 +62,11 @@ def registrarUsuario(conn):
         return -1
 
 
-    sql = "INSERT INTO Usuario(nombre, apellidos ,email ,contrasena ,telefono, fecha_alta) VALUES (%(n)s,%(a)s,%(e)s,%(c)s,%(t)s,%(f)s)"
+    sql = "INSERT INTO Usuario(nombre, apellidos ,email ,contrasena ,telefono, fecha_alta) VALUES (%(n)s,%(a)s,%(e)s,%(c)s,%(t)s,NOW())"
     
     with conn.cursor() as cursor:
         try:
-            cursor.execute(sql, {'n': nombre, 'a': apellidos, 'e': email, 'c': contraseña, 't': telefono, 'f': datetime.now()})
+            cursor.execute(sql, {'n': nombre, 'a': apellidos, 'e': email, 'c': contraseña, 't': telefono})
             conn.commit()
             print("Cliente registrado con éxito.")
 
@@ -92,20 +97,23 @@ def alquilar(conn, id_user):
     2. Comprueba que no la tenga alquilada (que no haya un alquiler de la misma película con un a fecha límite posterior)
     3. Confirmar importe
     4. Crea una nueva fila de alquiler
+
+    NIVEL DE AISLAMIENTO:
+    READ_COMMITTED -
+    REPEATABLE_READ -
+    SERIALIZABLE -
     """
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
     
-    sqlSelect = "SELECT id, precio FROM Pelicula WHERE titulo = %(t)s"
-
-    sqlCheck = "SELECT fecha_limite FROM Alquiler WHERE id_usuario = %(u)s && id_pelicula = %(p)s "
-
-    sqlInsert = "INSERT INTO Alquiler(id_usuario, id_pelicula, fecha_venta, fecha_limite, importe, compartida) VALUES (%(u)s,%(p)s,%(v)s,%(l)s,%(i)s,%(c)s)"
+    titulo = input('Título de película: ')
+    if titulo=="": titulo=None
     
-     
+    sqlSelect = "SELECT id, precio FROM Pelicula WHERE titulo = %(t)s"
+    sqlCheck = "SELECT id FROM Alquiler WHERE id_usuario = %(u)s AND id_pelicula = %(p)s AND fecha_limite > NOW()"
+    sqlInsert = "INSERT INTO Alquiler(id_usuario, id_pelicula, fecha_venta, fecha_limite, importe, compartida) VALUES (%(u)s,%(p)s,NOW(),NOW()+ INTERVAL '7 days',%(i)s,%(c)s)"
     
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
-            titulo = input('Título de película: ')
             cursor.execute(sqlSelect, {'t': titulo})
             row = cursor.fetchone()
             if row is None:
@@ -116,6 +124,10 @@ def alquilar(conn, id_user):
                 if row1 is None:
                     cursor.execute(sqlInsert, {'u': id_user, 'p': row['id'],'i': row['precio'], 'c': False})
                     print("Alquiler realizado con éxito.")
+                else:
+                    print("Ya tienes un alquiler vigente de la pelicula.")
+            
+            conn.commit()
 
         except psycopg2.Error as e:
             if e.pgcode== psycopg2.errorcodes.NOT_NULL_VIOLATION:
@@ -142,6 +154,11 @@ def logIn(conn):
     Obtiene la fila con ese email y compara la contraseña de la BD con la proporcionada.
     :param conn: conexión abierta a la bd
     :return: Nada
+
+    NIVEL DE AISLAMIENTO:
+    READ_COMMITTED -
+    REPEATABLE_READ -
+    SERIALIZABLE -
     """
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED)
 
@@ -175,6 +192,11 @@ def buscarPorTitulo(conn):
     """
     1. Pide el título de la película
     2. La recupera y muestra título, descripción, duración, precio y director
+
+    NIVEL DE AISLAMIENTO:
+    READ_COMMITTED -
+    REPEATABLE_READ -
+    SERIALIZABLE -
     """
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED)
     
@@ -207,6 +229,11 @@ def buscarPorCategoria(conn):
     2. Pide el nombre de la categoría
     3. Busca el id de la categoría con ese nombre
     4. Recupera todas las pelis con ese id_categoria y muestra su título, duración y precio
+
+    NIVEL DE AISLAMIENTO:
+    READ_COMMITTED -
+    REPEATABLE_READ -
+    SERIALIZABLE -
     """
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED)
 
@@ -224,16 +251,16 @@ def buscarPorCategoria(conn):
                 for categoria in categorias:
                     print(f"{categoria['nombre']}")
             
-            nombre=input("Inserta el nombre de la categoría a buscar: ")
+                nombre = input("Inserta el nombre de la categoría a buscar: ")
 
-            cursor.execute(sql2, {'n': nombre})
-            peliculas = cursor.fetchall()
-            if cursor.rowcount == 0:
-                print("No hay películas dentro de esta categoría :(")
-            else:
-                print(f"{cursor.rowcount} películas disponibles:")
-                for pelicula in peliculas:
-                    print(f"{pelicula['titulo']}, {pelicula['duracion']}, {pelicula['precio']}")
+                cursor.execute(sql2, {'n': nombre})
+                peliculas = cursor.fetchall()
+                if cursor.rowcount == 0:
+                    print("No hay películas dentro de esta categoría :(")
+                else:
+                    print(f"{cursor.rowcount} películas disponibles:")
+                    for pelicula in peliculas:
+                        print(f"{pelicula['titulo']}, {pelicula['duracion']}, {pelicula['precio']}")
             
             conn.commit()
 
@@ -252,25 +279,45 @@ def cambiarContraseña(conn, id_user):
     1. Pide la contraseña antigua
     2. Pide la contraseña nueva
     3. Comprueba que la contraseña antigua es la misma y actualiza la contraseña
+
+    NIVEL DE AISLAMIENTO:
+    READ_COMMITTED -
+    REPEATABLE_READ -
+    SERIALIZABLE -
     """
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
 
     contraseña_antigua = input("Contraseña antigua: ")
     contraseña_nueva = input("Contraseña nueva: ")
 
-    sql1 = "SELECT contrasena FROM User WHERE id = %(i)s"
-    sql2 = "UPDATE"
+    sql1 = "SELECT contrasena FROM Usuario WHERE id = %(i)s"
+    sql2 = "UPDATE Usuario SET contrasena = %(c)s WHERE id = %(i)s"
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
             cursor.execute(sql1, {'i': id_user})
+            row = cursor.fetchone()
+            if row is None:
+                print("No existe este usuario.")
+            else:
+                if contraseña_antigua == row['contrasena']:
+                    cursor.execute(sql2, {'c': contraseña_nueva, 'i': id_user})
+                    print("Contraseña cambiada con éxito.")
+                else:
+                    print("Contraseña incorrecta.")
+
+            conn.commit()
+
         except psycopg2.Error as e:
-            # ERROR: UNDEFINED_TABLE
-            # ERROR: Contraseña debe tener 5 o más caracteres
-            print(f"Erro {e.pgcode}: {e.pgerror}")
+            if e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
+                print("No puedes cambiar la contraseña en estos momentos, prueba mas tarde.")
+            if e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
+                print("La contraseña debe tener 5 o más caracteres.")
+            else:
+                print(f"Error {e.pgcode}: {e.pgerror}")
             conn.rollback()
-
-
+    
+    
 
 def extenderAlquiler(conn, id_user):
     """
@@ -285,13 +332,13 @@ def extenderAlquiler(conn, id_user):
     """
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
 
-    sql1 = "SELECT a.id, titulo, importe, fecha_limite, p.precio FROM Alquiler a JOIN Pelicula p ON a.id_pelicula = p.id WHERE id_usuario = %(i)s AND fecha_limite > %(f)s"    
+    sql1 = "SELECT a.id, titulo, importe, fecha_limite, p.precio FROM Alquiler a JOIN Pelicula p ON a.id_pelicula = p.id WHERE id_usuario = %(i)s AND fecha_limite > NOW()"    
     sql2 = "SELECT p.precio FROM Alquiler a JOIN Pelicula p ON a.id_pelicula = p.id WHERE a.id = %(i)s "
     sql3 = "UPDATE Alquiler SET fecha_limite = fecha_limite + INTERVAL '7 days', importe = importe + %(p)s WHERE id = %(i)s"
     
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
-            cursor.execute(sql1, {'i': id_user, 'f': datetime.now()})
+            cursor.execute(sql1, {'i': id_user})
             alquileres = cursor.fetchall()
             
             if cursor.rowcount == 0:
@@ -398,16 +445,16 @@ def compartirPelicula(conn, id_user):
     """
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
   
-    sql1 = "SELECT a.id, titulo, importe, fecha_limite, p.precio FROM Alquiler a JOIN Pelicula p ON a.id_pelicula = p.id WHERE id_usuario = %(i)s AND fecha_limite > %(f)s"
+    sql1 = "SELECT a.id, titulo, importe, fecha_limite, p.precio FROM Alquiler a JOIN Pelicula p ON a.id_pelicula = p.id WHERE id_usuario = %(i)s AND fecha_limite > NOW()"
     sql2 = "SELECT id FROM Usuario WHERE email = %(e)s"
     sql3 = "SELECT id_pelicula, fecha_limite FROM Alquiler WHERE id = %(i)s"
-    sql4 = "SELECT id FROM Alquiler WHERE id_usuario = %(i)s AND id_pelicula = %(p)s AND fecha_limite > %(f)s"    
-    sql5 = "INSERT INTO Alquiler(id_usuario, id_pelicula, fecha_venta, fecha_limite, importe, compartida) VALUES (%(u)s,%(p)s,%(v)s,%(l)s,0,true)"
+    sql4 = "SELECT id FROM Alquiler WHERE id_usuario = %(i)s AND id_pelicula = %(p)s AND fecha_limite > NOW()"    
+    sql5 = "INSERT INTO Alquiler(id_usuario, id_pelicula, fecha_venta, fecha_limite, importe, compartida) VALUES (%(u)s,%(p)s,NOW(),%(l)s,0,true)"
     sql6 = "UPDATE Alquiler SET compartida = true  WHERE id = %(i)s"
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
-            cursor.execute(sql1, {'i': id_user, 'f': datetime.now()})
+            cursor.execute(sql1, {'i': id_user})
 
             alquileres = cursor.fetchall()
             
@@ -431,10 +478,10 @@ def compartirPelicula(conn, id_user):
                     if alquiler is None:
                         print("No existe alquiler con ese id")
                     else:
-                        cursor.execute(sql4, {'i': user['id'], 'p': alquiler['id_pelicula'],'f': datetime.now()})
+                        cursor.execute(sql4, {'i': user['id'], 'p': alquiler['id_pelicula']})
                         repetido = cursor.fetchone()
                         if repetido is None:
-                            cursor.execute(sql5, {'u': user['id'],'p': alquiler['id_pelicula'],'v':  datetime.now(),'l': alquiler['fecha_limite']})
+                            cursor.execute(sql5, {'u': user['id'],'p': alquiler['id_pelicula'],'l': alquiler['fecha_limite']})
 
                             cursor.execute(sql6, {'i': id_alquiler})
                             print("Alquiler compartido con éxito.")
@@ -471,7 +518,7 @@ def userMenu(conn, id_user):
 1- Cambiar contraseña               2- Buscar pelicula por nombre 
 3- Buscar peliculas por categoria   4- Alquilar una pelicula
 5- Borrar cuenta                    6- Compartir pelicula
-7- Extender alquiler          
+7- Ampliar alquiler          
 q- Cerrar sesion
 """
     while True:
@@ -491,7 +538,7 @@ q- Cerrar sesion
         if tecla == '6':
             compartirPelicula(conn, id_user)
         if tecla == '7':
-            break
+            extenderAlquiler(conn,id_user)
         if tecla == 'q':
             break
         
