@@ -5,10 +5,10 @@ CREATE DATABASE pythonbda OWNER = bda;
 
 \c pythonbda bda;
 
-DROP TABLE Usuario;
+DROP TABLE Alquiler;
 DROP TABLE Pelicula;
 DROP TABLE Categoria;
-DROP TABLE Alquiler;
+DROP TABLE Usuario;
 
 
 
@@ -23,6 +23,12 @@ CREATE TABLE Usuario (
     CONSTRAINT LengthContrasena CHECK (LENGTH(contrasena) >= 5)
 );
 
+CREATE TABLE Categoria (
+    id          BIGSERIAL       CONSTRAINT CategoriaPK PRIMARY KEY,
+    nombre      VARCHAR(64)     UNIQUE NOT NULL,
+    descripcion VARCHAR(1024)
+);
+
 CREATE TABLE Pelicula (
     id              BIGSERIAL       CONSTRAINT PeliculaPK PRIMARY KEY,
     titulo          VARCHAR(128)    UNIQUE NOT NULL,
@@ -35,14 +41,10 @@ CREATE TABLE Pelicula (
     CONSTRAINT DuracionPelicula     CHECK (duracion >= 0),
     CONSTRAINT PrecioPelicula       CHECK (precio >= 0)
 );
-CREATE INDEX PeliculaCategoria ON Pelicula (titulo);
+CREATE INDEX PeliculaTitulo ON Pelicula (titulo);
 CREATE INDEX PeliculaCategoria ON Pelicula (id_categoria);
 
-CREATE TABLE Categoria (
-    id          BIGSERIAL       CONSTRAINT CategoriaPK PRIMARY KEY,
-    nombre      VARCHAR(64)     UNIQUE NOT NULL,
-    descripcion VARCHAR(1024)
-);
+
 
 CREATE TABLE Alquiler (
     id              BIGSERIAL   CONSTRAINT AlquilerPK PRIMARY KEY,
@@ -54,7 +56,7 @@ CREATE TABLE Alquiler (
     compartida      BOOLEAN      NOT NULL,
     CONSTRAINT AlquilerUsuarioFK    FOREIGN KEY (id_usuario) REFERENCES Usuario (id) ON DELETE SET NULL,
     CONSTRAINT AlquilerPeliculaFK   FOREIGN KEY (id_pelicula)   REFERENCES Pelicula (id) ON DELETE SET NULL,
-    CONSTRAINT ImporteAlquiler      CHECK (precio_venta >= 0),
+    CONSTRAINT ImporteAlquiler      CHECK (importe >= 0),
     CONSTRAINT FechaLimiteAlquiler  CHECK (fecha_limite > fecha_venta)
 );
 CREATE INDEX AlquilerUsuario ON Alquiler (id_usuario);
@@ -63,9 +65,9 @@ CREATE INDEX AlquilerUsuario ON Alquiler (id_usuario);
 
 /* INSERCION DE DATOS */
 
-INSERT INTO Categoria(nombre,descripcion) VALUES ("sci-fi","ciencia ficcion");
-INSERT INTO Categoria(nombre) VALUES ("comedia");
+INSERT INTO Categoria(nombre,descripcion) VALUES ('sci-fi','ciencia ficcion');
+INSERT INTO Categoria(nombre) VALUES ('comedia');
 
-INSERT INTO Pelicula(titulo, descripcion, director, duracion, precio, id_categoria) VALUES ("peli1", "descripcion1", "director1", 120, 3.99, 0);
-INSERT INTO Pelicula(titulo, descripcion, director, duracion, precio, id_categoria) VALUES ("peli2", "descripcion2", "director2", 120, 3.99, 1);
+INSERT INTO Pelicula(titulo, descripcion, director, duracion, precio, id_categoria) VALUES ('peli1', 'descripcion1', 'director1', 120, 2.99, 1);
+INSERT INTO Pelicula(titulo, descripcion, director, duracion, precio, id_categoria) VALUES ('peli2', 'descripcion2', 'director2', 120, 3.99, 2);
  
