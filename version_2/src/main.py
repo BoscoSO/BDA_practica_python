@@ -35,6 +35,8 @@ def registrarUsuario(conn):
     Crea un nuevo usuario con los datos proporcionados.
     :param conn: conexión abierta a la bd
     :return: Nada
+
+    NIVEL DE AISLAMIENTO:
     """
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED)
     
@@ -88,22 +90,18 @@ def alquilar(conn, id_user):
     2. Comprueba que no la tenga alquilada (que no haya un alquiler de la misma película con un a fecha límite posterior)
     3. Confirmar importe
     4. Crea una nueva fila de alquiler
+
+    NIVEL DE AISLAMIENTO:
     """
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
     
-    titulo = input('Título de película: ')
-    if titulo=="": titulo=None
-    
     sqlSelect = "SELECT id, precio FROM Pelicula WHERE titulo = %(t)s"
-
     sqlCheck = "SELECT fecha_limite FROM Alquiler WHERE id_usuario = %(u)s && id_pelicula = %(p)s "
-
     sqlInsert = "INSERT INTO Alquiler(id_usuario, id_pelicula, fecha_venta, fecha_limite, importe, compartida) VALUES (%(u)s,%(p)s,%(v)s,%(l)s,%(i)s,%(c)s)"
-    
-     
     
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
+            titulo = input('Título de película: ')
             cursor.execute(sqlSelect, {'t': titulo})
             row = cursor.fetchone()
             if row is None:
@@ -117,6 +115,7 @@ def alquilar(conn, id_user):
                     cursor.execute(sqlInsert, {'u': id_user, 'p': row['id'], 'v':  datetime.now(), 'l':  (datetime.now() + datetime.timedelta(days=7)),'i': row['precio'], 'c': False})
                     conn.commit()
                     print("Alquiler realizado con éxito.")
+            conn.commit()
 
         except psycopg2.Error as e:
             if e.pgcode== psycopg2.errorcodes.NOT_NULL_VIOLATION:
@@ -143,6 +142,8 @@ def logIn(conn):
     Obtiene la fila con ese email y compara la contraseña de la BD con la proporcionada.
     :param conn: conexión abierta a la bd
     :return: Nada
+
+    NIVEL DE AISLAMIENTO:
     """
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED)
 
@@ -172,6 +173,8 @@ def buscarPorTitulo(conn):
     """
     1. Pide el título de la película
     2. La recupera y muestra título, descripción, duración, precio y director
+
+    NIVEL DE AISLAMIENTO:
     """
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED)
     
@@ -204,6 +207,8 @@ def buscarPorCategoria(conn):
     2. Pide el nombre de la categoría
     3. Busca el id de la categoría con ese nombre
     4. Recupera todas las pelis con ese id_categoria y muestra su título, duración y precio
+
+    NIVEL DE AISLAMIENTO:
     """
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED)
 
@@ -220,18 +225,18 @@ def buscarPorCategoria(conn):
                 print(f"{cursor.rowcount} categorías disponibles:")
                 for categoria in categorias:
                     print(f"{categoria['nombre']}")
-            
-            nombre=input("Inserta el nombre de la categoría a buscar: ")
+                
+                nombre=input("Inserta el nombre de la categoría a buscar: ")
 
-            cursor.execute(sql2, {'n': nombre})
-            peliculas = cursor.fetchall()
-            if cursor.rowcount == 0:
-                print("No hay películas dentro de esta categoría :(")
-            else:
-                print(f"{cursor.rowcount} películas disponibles:")
-                for pelicula in peliculas:
-                    print(f"{pelicula['titulo']}, {pelicula['duracion']}, {pelicula['precio']}")
-            
+                cursor.execute(sql2, {'n': nombre})
+                peliculas = cursor.fetchall()
+                if cursor.rowcount == 0:
+                    print("No hay películas dentro de esta categoría :(")
+                else:
+                    print(f"{cursor.rowcount} películas disponibles:")
+                    for pelicula in peliculas:
+                        print(f"{pelicula['titulo']}, {pelicula['duracion']}, {pelicula['precio']}")
+
             conn.commit()
 
         except psycopg2.Error as e:
@@ -249,6 +254,9 @@ def cambiarContraseña(conn, id_user):
     1. Pide la contraseña antigua
     2. Pide la contraseña nueva
     3. Comprueba que la contraseña antigua es la misma y actualiza la contraseña
+
+    NIVEL DE AISLAMIENTO:
+    SERIALIZABLE - Necesitamos saber si la contraseña se ha actualizado o si la cuenta fue borrada.
     """
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
 
@@ -256,21 +264,32 @@ def cambiarContraseña(conn, id_user):
     contraseña_nueva = input("Contraseña nueva: ")
 
     sql1 = "SELECT contrasena FROM User WHERE id = %(i)s"
-    sql2 = "UPDATE"
+    sql2 = "UPDATE User SET contrasena = %(c)s WHERE id = %(i)s"
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         try:
             cursor.execute(sql1, {'i': id_user})
-        except psycopg2.Error as e:
-            # ERROR: UNDEFINED_TABLE
-            # ERROR: Contraseña debe tener 5 o más caracteres
-            print(f"Erro {e.pgcode}: {e.pgerror}")
-            conn.rollback()
+            row = cursor.fetchone()
+            if contraseña_antigua == row['contrasena']:
+                cursor.execute(sql2, {'c': contraseña_nueva}, {'i': id_user})
+                print("Contraseña actualizada correctamente")
+            else:
+                print("Contraseña incorrecta")
             
+            conn.commit()
 
-    # ERROR: Contraseña debe tener 5 o más caracteres
-    
-    
+        except psycopg2.Error as e:
+            if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
+                print("La tabla user no existe. No se puede cambiar la contraseña.")
+            if e.pgcode== psycopg2.errorcodes.CHECK_VIOLATION:
+                print("La nueva contraseña debe tener al menos 5 caracteres.")
+            elif e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
+                print("No se pudo cambiar la contraseña porque otra instancia la modificó.")
+            else:
+                print(f"Erro {e.pgcode}: {e.pgerror}")
+            conn.rollback()
+
+
 
 def extenderAlquiler(conn, id_user):
     """
@@ -326,7 +345,7 @@ def userMenu(conn, id_user):
 1- Cambiar contraseña               2- Buscar pelicula por nombre 
 3- Buscar peliculas por categoria   4- Alquilar una pelicula
 5- Borrar cuenta                    6- Compartir pelicula
-7- Ampliar alquiler          
+7- Extender alquiler          
 q- Cerrar sesion
 """
     while True:
@@ -345,7 +364,7 @@ q- Cerrar sesion
         if tecla == '6':
             compartirPelicula(conn, id_user)
         if tecla == '7':
-            break
+            extenderAlquiler(conn, id_user)
         if tecla == 'q':
             break
         
