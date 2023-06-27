@@ -44,8 +44,6 @@ CREATE TABLE Pelicula (
 CREATE INDEX PeliculaTitulo ON Pelicula (titulo);
 CREATE INDEX PeliculaCategoria ON Pelicula (id_categoria);
 
-
-
 CREATE TABLE Alquiler (
     id              BIGSERIAL   CONSTRAINT AlquilerPK PRIMARY KEY,
     id_usuario      BIGINT,

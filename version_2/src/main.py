@@ -73,8 +73,9 @@ def registrarUsuario(conn):
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.UNIQUE_VIOLATION:
                 print(f"Ya existe una cuenta con ese email o telefono, pruebe con otro")
-            if e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
-                print(f"La contraseña debe contener mas de 5 caracteres")
+            elif e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
+                if 'contrasena' in e.pgerror:
+                    print(f"La contraseña debe contener mas de 5 caracteres")
             elif e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
                 if 'nombre' in e.pgerror:
                     print("El nombre del usuario es necesario")
@@ -82,7 +83,7 @@ def registrarUsuario(conn):
                     print("Los apellidos del usuario son necesarios")
                 elif 'email' in e.pgerror:
                     print("El email del usuario es necesario")
-                elif 'contraseña' in e.pgerror:
+                elif 'contrasena' in e.pgerror:
                     print("La contraseña del usuario es necesaria")
                 elif 'telefono' in e.pgerror:
                     print("El telefono del usuario es necesario")
@@ -139,6 +140,11 @@ def alquilar(conn, id_user):
                     print("importe no puede ser nulo")
                 elif 'compartida' in e.pgerror:
                     print("compartida no puede ser nulo")
+            elif e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
+                if 'importe' in e.pgerror:
+                    print("El importe del alquiler no puede ser negativo")
+                elif 'fecha_limite' in e.pgerror:
+                    print("La fecha limite no puede ser anterior a la fecha de venta")
             else:                   
                 print(f"Error {e.pgcode}: {e.pgerror}")
             conn.rollback()
@@ -333,7 +339,7 @@ def extenderAlquiler(conn, id_user):
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
 
     sql1 = "SELECT a.id, titulo, importe, fecha_limite, p.precio FROM Alquiler a JOIN Pelicula p ON a.id_pelicula = p.id WHERE id_usuario = %(i)s AND fecha_limite > NOW()"    
-    sql2 = "SELECT p.precio FROM Alquiler a JOIN Pelicula p ON a.id_pelicula = p.id WHERE a.id = %(i)s "
+    sql2 = "SELECT a.importe, p.precio FROM Alquiler a JOIN Pelicula p ON a.id_pelicula = p.id WHERE a.id = %(i)s "
     sql3 = "UPDATE Alquiler SET fecha_limite = fecha_limite + INTERVAL '7 days', importe = importe + %(p)s WHERE id = %(i)s"
     
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
@@ -346,27 +352,38 @@ def extenderAlquiler(conn, id_user):
             else:
                 print(f"{cursor.rowcount} Alquileres disponibles:")
                 for alquiler in alquileres:
-                    print(f"ID {alquiler['id']}: {alquiler['titulo']}, {alquiler['importe']}€, hasta el {alquiler['fecha_limite']}. Ampliar una semana [{alquiler['precio']}€]")
+                    if alquiler['importe'] == 0:
+                        print(f"ID {alquiler['id']}: {alquiler['titulo']}, {alquiler['importe']}€, hasta el {alquiler['fecha_limite']}. No ampliable")
+                    else:            
+                        print(f"ID {alquiler['id']}: {alquiler['titulo']}, {alquiler['importe']}€, hasta el {alquiler['fecha_limite']}. Ampliar una semana [{alquiler['precio']}€]")
                 
                 id_alquiler = input("Introduce el id del alquiler a extender: ")
+                if not id_alquiler.isdigit():
+                    print("No es un id valido")
+                    return
+               
                 cursor.execute(sql2, {'i': id_alquiler})
                 alquiler = cursor.fetchone()
                 
                 if alquiler is None:
                     print("No existe un alquiler con ese id.")        
                 else:
-                    cursor.execute(sql3, {'p': alquiler['precio'],'i': id_alquiler})
-                    print("Alquiler extendido con éxito.")
+                    if alquiler['importe'] == 0:
+                        print("Este alquiler te lo han compartido, no puedes extenderlo.")
+                    else:
+                        cursor.execute(sql3, {'p': alquiler['precio'],'i': id_alquiler})
+                        print("Alquiler extendido con éxito.")
             
             conn.commit()
                 
         except psycopg2.Error as e:
-            if e.pgcode == psycopg2.errorcodes.UNDEFINED_TABLE:
-                print("No existe la tabla Alquiler. No se pudo realizar la acción.")
-            if e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
-                print("No puedes ampliar el alquiler en estos momentos, prueba mas tarde.")
             if e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
-                print("La fecha o precio no son correctas")
+                if 'importe' in e.pgerror:
+                    print("El importe del alquiler no puede ser negativo")
+                elif 'fecha_limite' in e.pgerror:
+                    print("La fecha limite no puede ser anterior a la fecha de venta")
+            elif e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
+                print("No puedes ampliar el alquiler en estos momentos, prueba mas tarde.")
             else:
                 print(f"Error {e.pgcode}: {e.pgerror}")
             conn.rollback()
@@ -478,23 +495,38 @@ def compartirPelicula(conn, id_user):
                     if alquiler is None:
                         print("No existe alquiler con ese id")
                     else:
-                        cursor.execute(sql4, {'i': user['id'], 'p': alquiler['id_pelicula']})
-                        repetido = cursor.fetchone()
-                        if repetido is None:
-                            cursor.execute(sql5, {'u': user['id'],'p': alquiler['id_pelicula'],'l': alquiler['fecha_limite']})
-
-                            cursor.execute(sql6, {'i': id_alquiler})
-                            print("Alquiler compartido con éxito.")
+                        if user['id'] == id_user:
+                            print("No puedes compartirtela a ti mismo")
                         else:
-                            print("El usuario ya tiene esa pelicula actualmente alquilada")
+                            cursor.execute(sql4, {'i': user['id'], 'p': alquiler['id_pelicula']})
+                            repetido = cursor.fetchone()
+                            if repetido is None:
+                                cursor.execute(sql5, {'u': user['id'],'p': alquiler['id_pelicula'],'l': alquiler['fecha_limite']})
+
+                                cursor.execute(sql6, {'i': id_alquiler})
+                                print("Alquiler compartido con éxito.")
+                            else:
+                                print("El usuario ya tiene esa pelicula actualmente alquilada")
 
             conn.commit()
 
         except psycopg2.Error as e:
-            if e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
+            if e.pgcode== psycopg2.errorcodes.NOT_NULL_VIOLATION:
+                if 'fecha_venta' in e.pgerror:
+                    print("fecha_venta no puede ser nulo")
+                elif 'fecha_limite' in e.pgerror:
+                    print("fecha_limite no puede ser nulo")
+                elif 'importe' in e.pgerror:
+                    print("importe no puede ser nulo")
+                elif 'compartida' in e.pgerror:
+                    print("compartida no puede ser nulo")
+            elif e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
+                if 'importe' in e.pgerror:
+                    print("El importe del alquiler no puede ser negativo")
+                elif 'fecha_limite' in e.pgerror:
+                    print("La fecha limite no puede ser anterior a la fecha de venta")
+            elif e.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
                 print("No puedes compartir el alquiler en estos momentos, prueba mas tarde.")
-            if e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
-                print("La fecha o precio no son correctas")
             else:
                 print(f"Error {e.pgcode}: {e.pgerror}")
             conn.rollback()
@@ -510,7 +542,7 @@ def compartirPelicula(conn, id_user):
 
 def userMenu(conn, id_user):
     """
-    Imprime un menú de opciones para un usuario logeado, solicita a opción e executa a función asociada.
+    Imprime un menú de opciones para un usuario logueado, solicita a opción e executa a función asociada.
     'q' para cerrar sesión y volver al menú base.
     """
     MENU_TEXT = """
@@ -546,7 +578,7 @@ q- Cerrar sesion
 
 def simpleMenu(conn):
     """
-    Imprime un menú de opciones, solicita la opción y executa la función asociada.
+    Imprime un menú de opciones para un usuario no logueado, solicita la opción y executa la función asociada.
     'q' para salir.
     """
     MENU_TEXT = """
