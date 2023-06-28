@@ -63,9 +63,15 @@ CREATE INDEX AlquilerUsuario ON Alquiler (id_usuario);
 
 /* INSERCION DE DATOS */
 
+/**
 INSERT INTO Categoria(nombre,descripcion) VALUES ('sci-fi','ciencia ficcion');
 INSERT INTO Categoria(nombre) VALUES ('comedia');
+INSERT INTO Categoria(nombre,descripcion) VALUES ('romance','uwu');
+
 
 INSERT INTO Pelicula(titulo, descripcion, director, duracion, precio, id_categoria) VALUES ('peli1', 'descripcion1', 'director1', 120, 2.99, 1);
 INSERT INTO Pelicula(titulo, descripcion, director, duracion, precio, id_categoria) VALUES ('peli2', 'descripcion2', 'director2', 120, 3.99, 2);
- 
+INSERT INTO Pelicula(titulo, descripcion, director, duracion, precio, id_categoria) VALUES ('peli3', 'descripcion3', 'director3', 120, 2.99, 1);
+INSERT INTO Pelicula(titulo, descripcion, director, duracion, precio, id_categoria) VALUES ('peli4', 'descripcion4', 'director4', 120, 2.99, 2);
+INSERT INTO Pelicula(titulo, descripcion, director, duracion, precio, id_categoria) VALUES ('peli5', 'descripcion5', 'director5', 120, 3.99, 3);
+ **/
